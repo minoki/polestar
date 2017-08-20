@@ -167,6 +167,7 @@ primTypeOf (PVBuiltin f) = case f of
                         ,TyFalse `TyArr` (TyFalse `TyArr` TyFalse)
                         ,TyBool `TyArr` (TyBool `TyArr` TyBool)
                         ]
+  BIterate -> TyAll (Id "a") Nothing $ TyNat `TyArr` (TyRef 1 `TyArr` ((TyRef 2 `TyArr` TyRef 3) `TyArr` TyRef 3))
 
 canonicalTypeOf :: [Binding] -> Term -> Either String CanonicalType
 canonicalTypeOf ctx tm = normalizeType ctx <$> typeOf ctx tm

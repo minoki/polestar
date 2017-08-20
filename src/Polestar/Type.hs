@@ -79,6 +79,9 @@ data Builtin
   | BImagPart
   | BAbs
   | BSqrt
+  -- TODO: factorial
+  -- TODO: exp, log, expm1, log1p
+  -- TODO: trigonometric functions and hyperbolic functions
   -- binary
   | BAdd
   | BSub
@@ -93,7 +96,9 @@ data Builtin
   | BMin
   | BLogicalAnd
   | BLogicalOr
-  -- | BIterate
+  -- TODO: binomial coefficients
+  -- other primitives
+  | BIterate
   -- | BUnsafeGlue
   deriving (Eq,Show,Enum,Bounded)
 
@@ -105,7 +110,6 @@ data PrimValue = PVZero
                | PVBool !Bool
                | PVUnit
                | PVBuiltin !Builtin
-               -- 'iterate' function
                deriving (Eq,Show)
 
 data Term = TmPrim !PrimValue             -- primitive value
@@ -128,20 +132,50 @@ data Binding = VarBind Id CanonicalType
              | AnonymousBind
              deriving (Eq,Show)
 
-arity :: Builtin -> Int
-arity f = case f of
-  BNegate -> 1
-  BIntToReal -> 1
-  BNatToInt -> 1
-  BIntToNat -> 1
-  _ -> 2
+isUnary :: Builtin -> Bool
+isUnary f = case f of
+  BNegate -> True
+  BLogicalNot -> True
+  BNatToInt -> True
+  BNatToNNReal -> True
+  BIntToNat -> True
+  BIntToReal -> True
+  BNNRealToReal -> True
+  BRealToComplex -> True
+  BMkImaginary -> True
+  BImaginaryToComplex -> True
+  BRealPart -> True
+  BImagPart -> True
+  BAbs -> True
+  BSqrt -> True
+  _ -> False
+
+isBinary :: Builtin -> Bool
+isBinary f = case f of
+  BAdd -> True
+  BSub -> True
+  BMul -> True
+  BDiv -> True
+  BPow -> True
+  BTSubNat -> True
+  BLt -> True
+  BLe -> True
+  BEqual -> True
+  BMax -> True
+  BMin -> True
+  BLogicalAnd -> True
+  BLogicalOr -> True
+  _ -> False
 
 isValue :: Term -> Bool
 isValue t = case t of
   TmPrim _ -> True
   TmAbs _ _ _ -> True
   TmTyAbs _ _ _ -> True
-  TmApp (TmPrim (PVBuiltin f)) x | arity f > 1 -> isValue x -- partial application
+  TmApp (TmPrim (PVBuiltin f)) x | isBinary f -> isValue x -- partial application
+  TmTyApp (TmPrim (PVBuiltin BIterate)) ty -> True
+  TmApp (TmTyApp (TmPrim (PVBuiltin BIterate)) ty) x -> isValue x
+  TmApp (TmApp (TmTyApp (TmPrim (PVBuiltin BIterate)) ty) x) y -> isValue x && isValue y
   TmTuple xs -> all isValue xs
   TmCoherentTuple xs -> all isValue xs
   _ -> False

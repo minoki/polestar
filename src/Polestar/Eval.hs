@@ -210,9 +210,14 @@ eval1 ctx t = case t of
   TmApp u v
     | isValue u && isValue v -> case u of
         TmAbs _name _ty body -> return $ termSubst v 0 body -- no type checking here
-        TmPrim (PVBuiltin f) | arity f == 1-> applyBuiltinUnary f v
+        TmPrim (PVBuiltin f) | isUnary f -> applyBuiltinUnary f v
         TmPrim (PVBuiltin _) -> return t -- partial application
-        TmApp (TmPrim (PVBuiltin f)) u' | arity f == 2 -> applyBuiltinBinary f u' v
+        TmApp (TmPrim (PVBuiltin f)) u' | isBinary f -> applyBuiltinBinary f u' v
+        TmApp (TmApp (TmTyApp (TmPrim (PVBuiltin BIterate)) ty) n) z -> do
+          n' <- natFromValue n
+          if n' == 0
+            then return $ z
+            else return $ TmApp (TmApp (TmApp (TmTyApp (TmPrim (PVBuiltin BIterate)) ty) (TmPrim (PVInt (n' - 1)))) (TmApp v z)) v
         _ -> Left "invalid function application (expected function type)"
     | isValue u -> TmApp u <$> (eval1 ctx v)
     | otherwise -> TmApp <$> (eval1 ctx u) <*> pure v

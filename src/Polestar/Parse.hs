@@ -55,6 +55,7 @@ builtins = map (fmap PVBuiltin)
            ,("equal",BEqual)
            ,("and",BLogicalAnd)
            ,("or",BLogicalOr)
+           ,("iterate",BIterate)
            ]
 
 langDef = PT.LanguageDef { PT.commentStart = ""
