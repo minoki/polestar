@@ -2,6 +2,7 @@ module Polestar.Parse where
 import Polestar.Type
 import Text.Parsec
 import qualified Text.Parsec.Token as PT
+import qualified Text.Parsec.Expr as PE
 import Data.List (elemIndex)
 import Data.Foldable (foldl')
 import qualified Polestar.Parse.Number as NP
@@ -152,13 +153,45 @@ appTerm ctx = do x <- simpleTerm ctx
                               <|> (flip TmProj <$> (char '@' >> (fromInteger <$> natural))))
                  return (foldl' (flip ($)) x xs)
 
+opTerm :: [NameBinding] -> Parser Term
+opTerm ctx = PE.buildExpressionParser table (appTerm ctx) <?> "expression"
+  where
+    -- [postfixOp "!" -- factorial
+    -- ,postfixOp "!!" -- double factorial
+    -- ],
+    table = [[binaryOp "^" BPow PE.AssocRight
+             ]
+            ,[prefixOp "-" BNegate
+             -- ,prefixOp "¬" BLogicNot -- \neg, \lnot
+             ]
+            ,[binaryOp "*" BMul PE.AssocLeft
+             ,binaryOp "/" BDiv PE.AssocLeft
+             ]
+            ,[binaryOp "+" BAdd PE.AssocLeft
+             ,binaryOp "-" BSub PE.AssocLeft
+             ,binaryOp ".-" BTSubNat PE.AssocLeft -- .- or '- or -. or -' or `-
+             ,binaryOp "∸" BTSubNat PE.AssocLeft
+             ]
+            ,[binaryOp "==" BEqual PE.AssocNone
+              -- ,binaryOp "/=" BNotEqual PE.AssocNone
+             ,binaryOp "<"  BLt PE.AssocNone
+             ,binaryOp "<=" BLe PE.AssocNone
+               -- ,binaryOp ">"  BGt PE.AssocNone
+               -- ,binaryOp ">=" BGe PE.AssocNone
+             ]
+              -- logical and, logical or
+            ]
+    prefixOp name fn = PE.Prefix (reservedOp name >> return (TmApp (TmPrim (PVBuiltin fn))))
+    postfixOp name fn = PE.Postfix (reservedOp name >> return (TmApp (TmPrim (PVBuiltin fn))))
+    binaryOp name fn assoc = PE.Infix (reservedOp name >> return (\x y -> TmApp (TmApp (TmPrim (PVBuiltin fn)) x) y)) assoc
+
 term :: [NameBinding] -> Parser Term
 term ctx = lambdaAbstraction
            <|> typeAbstraction
            <|> letIn
            <|> ifThenElse
            <|> typeFor
-           <|> appTerm ctx
+           <|> opTerm ctx
            <?> "expression"
   where lambdaAbstraction = do
           reservedOp "\\"
