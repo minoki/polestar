@@ -44,6 +44,12 @@ intFromValue (TmPrim (PVZero)) = return 0
 intFromValue (TmPrim (PVInt x)) = return x
 intFromValue _ = Left "type error (expected an integer)"
 
+nnrealFromValue :: Term -> Either String Double
+nnrealFromValue (TmPrim (PVZero)) = return 0
+nnrealFromValue (TmPrim (PVInt x)) | x >= 0 = return (fromIntegral x)
+nnrealFromValue (TmPrim (PVReal x)) | x >= 0 = return x
+nnrealFromValue _ = Left "type error (expected a non-negative real number)"
+
 realFromValue :: Term -> Either String Double
 realFromValue (TmPrim (PVZero)) = return 0
 realFromValue (TmPrim (PVInt x)) = return (fromIntegral x)
@@ -53,7 +59,15 @@ realFromValue _ = Left "type error (expected a real number)"
 imaginaryFromValue :: Term -> Either String Double
 imaginaryFromValue (TmPrim (PVZero)) = return 0
 imaginaryFromValue (TmPrim (PVImaginary x)) = return x
-imaginaryFromValue _ = Left "type error (expected a real number)"
+imaginaryFromValue _ = Left "type error (expected an imaginary number)"
+
+complexFromValue :: Term -> Either String (Complex Double)
+complexFromValue (TmPrim (PVZero)) = return 0
+complexFromValue (TmPrim (PVInt x)) = return (fromIntegral x)
+complexFromValue (TmPrim (PVReal x)) = return (x:+0)
+complexFromValue (TmPrim (PVImaginary x)) = return (0:+x)
+complexFromValue (TmPrim (PVComplex z)) = return z
+complexFromValue _ = Left "type error (expected a complex number)"
 
 applyBuiltinUnary :: Builtin -> Term -> Either String Term
 applyBuiltinUnary f v = case f of
@@ -72,23 +86,102 @@ applyBuiltinUnary f v = case f of
   BRealToComplex -> (TmPrim . PVComplex . (:+0)) <$> realFromValue v
   BMkImaginary -> (TmPrim . PVImaginary) <$> realFromValue v
   BImaginaryToComplex -> (TmPrim . PVComplex . (0:+)) <$> imaginaryFromValue v
+  BRealPart -> case v of
+    TmPrim PVZero -> return v
+    TmPrim (PVInt _) -> return v
+    TmPrim (PVReal _) -> return v
+    TmPrim (PVImaginary _) -> return $ TmPrim PVZero
+    TmPrim (PVComplex z) -> return $ TmPrim (PVReal (realPart z))
+    _ -> Left "type error (expected a complex number)"
+  BImagPart -> case v of
+    TmPrim PVZero -> return $ TmPrim PVZero
+    TmPrim (PVInt _) -> return $ TmPrim PVZero
+    TmPrim (PVReal _) -> return $ TmPrim PVZero
+    TmPrim (PVImaginary x) -> return $ TmPrim (PVReal x)
+    TmPrim (PVComplex z) -> return $ TmPrim (PVReal (imagPart z))
+    _ -> Left "type error (expected a complex number)"
+  BAbs -> case v of
+    TmPrim PVZero -> return $ TmPrim PVZero
+    TmPrim (PVInt x) -> return $ TmPrim (PVInt (abs x))
+    TmPrim (PVReal x) -> return $ TmPrim (PVReal (abs x))
+    TmPrim (PVImaginary x) -> return $ TmPrim (PVReal (abs x))
+    TmPrim (PVComplex z) -> return $ TmPrim (PVReal (magnitude z))
+    _ -> Left "type error (expected a complex number)"
+  BSqrt -> case v of
+    TmPrim PVZero -> return $ TmPrim PVZero
+    TmPrim (PVInt x) | x >= 0 -> return $ TmPrim (PVReal (sqrt $ fromIntegral x))
+    TmPrim (PVReal x) | x >= 0 -> return $ TmPrim (PVReal (sqrt x))
+    TmPrim (PVImaginary x) -> return $ TmPrim (PVComplex (sqrt (0:+x)))
+    TmPrim (PVComplex z) -> return $ TmPrim (PVComplex (sqrt z))
+    _ -> Left "type error (expected a complex number)"
   _ -> Left "applyBuiltinUnary: not unary"
+
+makeOverloadedFn :: [Either String Term] -> Either String Term
+makeOverloadedFn [] = Left "no overload"
+makeOverloadedFn [x] = x
+makeOverloadedFn (Left _ : xs) = makeOverloadedFn xs
+makeOverloadedFn (Right x : xs) = Right x
+
+isZero :: Term -> Bool
+isZero (TmPrim PVZero) = True
+isZero _ = False
+
+isNonNegative :: Term -> Bool
+isNonNegative (TmPrim PVZero) = True
+isNonNegative (TmPrim (PVInt x)) = x >= 0
+isNonNegative (TmPrim (PVReal x)) = x >= 0
+isNonNegative _ = False
 
 applyBuiltinBinary :: Builtin -> Term -> Term -> Either String Term
 applyBuiltinBinary f u v = case f of
-  BDiv -> (TmPrim . PVReal) <$> ((/) <$> realFromValue u <*> realFromValue v)
+  BAdd -> makeOverloadedFn [if isZero u && isZero v then return (TmPrim PVZero) else Left "not zero"
+                           ,(TmPrim . PVInt) <$> ((+) <$> intFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVReal) <$> ((+) <$> realFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVImaginary) <$> ((+) <$> imaginaryFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVComplex) <$> ((+) <$> complexFromValue u <*> complexFromValue v)
+                           ]
+  BSub -> makeOverloadedFn [if isZero u && isZero v then return (TmPrim PVZero) else Left "not zero"
+                           ,(TmPrim . PVInt) <$> ((-) <$> intFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVReal) <$> ((-) <$> realFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVImaginary) <$> ((-) <$> imaginaryFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVComplex) <$> ((-) <$> complexFromValue u <*> complexFromValue v)
+                           ]
+  BMul -> makeOverloadedFn [if isZero u || isZero v then return (TmPrim PVZero) else Left "not zero"
+                           ,(TmPrim . PVInt) <$> ((*) <$> intFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVReal) <$> ((*) <$> realFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVImaginary) <$> ((*) <$> realFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVImaginary) <$> ((*) <$> imaginaryFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVReal . negate) <$> ((*) <$> imaginaryFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVComplex) <$> ((*) <$> complexFromValue u <*> complexFromValue v)
+                           ]
+  BDiv -> makeOverloadedFn [(TmPrim . PVReal) <$> ((/) <$> realFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVImaginary) <$> ((/) <$> imaginaryFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVImaginary . negate) <$> ((/) <$> realFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVReal) <$> ((/) <$> imaginaryFromValue u <*> imaginaryFromValue v)
+                           ,(TmPrim . PVComplex) <$> ((/) <$> complexFromValue u <*> complexFromValue v)
+                           ]
+  BPow -> makeOverloadedFn [if isZero v then return (TmPrim (PVInt 1)) else Left "not zero"
+                           ,(TmPrim . PVInt) <$> ((^) <$> intFromValue u <*> natFromValue v)
+                           ,(TmPrim . PVReal) <$> ((**) <$> nnrealFromValue u <*> realFromValue v)
+                           ,(TmPrim . PVReal) <$> ((^^) <$> realFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVComplex) <$> ((**) <$> complexFromValue u <*> complexFromValue v)
+                           ]
+  BTSubNat -> do u' <- natFromValue u
+                 v' <- natFromValue v
+                 let w | u' >= v' = u' - v'
+                       | otherwise = 0
+                 return (TmPrim (PVInt w))
   BLt -> (TmPrim . PVBool) <$> ((<) <$> realFromValue u <*> realFromValue v)
   BLe -> (TmPrim . PVBool) <$> ((<=) <$> realFromValue u <*> realFromValue v)
-  BEqual -> (TmPrim . PVBool) <$> ((==) <$> realFromValue u <*> realFromValue v)
-  BAdd -> case (TmPrim . PVInt) <$> ((+) <$> intFromValue u <*> intFromValue v) of
-    Left _ -> (TmPrim . PVReal) <$> ((+) <$> realFromValue u <*> realFromValue v)
-    Right w -> return w
-  BSub -> case (TmPrim . PVInt) <$> ((-) <$> intFromValue u <*> intFromValue v) of
-    Left _ -> (TmPrim . PVReal) <$> ((-) <$> realFromValue u <*> realFromValue v)
-    Right w -> return w
-  BMul -> case (TmPrim . PVInt) <$> ((*) <$> intFromValue u <*> intFromValue v) of
-    Left _ -> (TmPrim . PVReal) <$> ((*) <$> realFromValue u <*> realFromValue v)
-    Right w -> return w
+  BEqual -> (TmPrim . PVBool) <$> ((==) <$> complexFromValue u <*> complexFromValue v)
+  BMax -> makeOverloadedFn [(TmPrim . PVInt) <$> (max <$> intFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVReal) <$> (max <$> realFromValue u <*> realFromValue v)
+                           ]
+  BMin -> makeOverloadedFn [if (isZero u && isNonNegative v) || (isZero v && isNonNegative u) then return (TmPrim PVZero) else Left "not zero"
+                           ,(TmPrim . PVInt) <$> (min <$> intFromValue u <*> intFromValue v)
+                           ,(TmPrim . PVReal) <$> (min <$> realFromValue u <*> realFromValue v)
+                           ]
+  _ -> Left "not implemented yet; sorry"
 
 data ValueBinding = ValueBind !Term
                   | TypeBind

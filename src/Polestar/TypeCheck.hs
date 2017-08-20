@@ -128,7 +128,7 @@ primTypeOf (PVBuiltin f) = case f of
                   -- ,TyReal `TyArr` (TyEvenInt `TyArr` TyNNReal)
                   ,TyNNReal `TyArr` (TyReal `TyArr` TyNNReal)
                   ,TyReal `TyArr` (TyInt `TyArr` TyReal)
-                  ,TyReal `TyArr` (TyReal `TyArr` TyComplex)
+                  -- ,TyReal `TyArr` (TyReal `TyArr` TyComplex)
                   ,TyComplex `TyArr` (TyComplex `TyArr` TyComplex)
                   ]
   BTSubNat -> TyNat `TyArr` (TyNat `TyArr` TyNat) -- NNReal?
