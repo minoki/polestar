@@ -15,9 +15,29 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
-  build-depends:       base >= 4.7 && < 5
+  exposed-modules:     Polestar.Type
+                       , Polestar.Subtype
+                       , Polestar.TypeCheck
+                       , Polestar.Parse
+                       , Polestar.Parse.Number
+                       , Polestar.PrettyPrint
+                       , Polestar.Eval
+  build-depends:       base >= 4.7 && < 5, parsec
   default-language:    Haskell2010
+  ghc-options:         -Wincomplete-patterns
+
+executable Repl
+  hs-source-dirs:      src
+  main-is:             Repl.hs
+  default-language:    Haskell2010
+  other-modules:       Polestar.Type
+                       , Polestar.Subtype
+                       , Polestar.TypeCheck
+                       , Polestar.Parse
+                       , Polestar.Parse.Number
+                       , Polestar.PrettyPrint
+                       , Polestar.Eval
+  build-depends:       base >= 4.7 && < 5, parsec, haskeline
   ghc-options:         -Wincomplete-patterns
 
 source-repository head
