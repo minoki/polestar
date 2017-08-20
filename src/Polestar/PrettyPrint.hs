@@ -98,6 +98,7 @@ prettyPrintTermP p ctx t = case t of
   TmPrim PVUnit -> showString "unit"
   TmPrim (PVBuiltin f) -> showString $ case f of
     BNegate -> "negate"
+    BLogicalNot -> "not"
     BNatToInt -> "natToInt"
     BNatToNNReal -> "natToNNReal"
     BIntToNat -> "intToNat"
@@ -121,6 +122,8 @@ prettyPrintTermP p ctx t = case t of
     BEqual -> "equal"
     BMax -> "max"
     BMin -> "min"
+    BLogicalAnd -> "and"
+    BLogicalOr -> "or"
   TmAbs (Id name) ty body -> showParen (p > 0) $ showChar '\\' . showString name' . showChar ':' . prettyPrintTypeP 1 ctx ty . showString ". " . prettyPrintTermP 0 (NVarBind name' : ctx) body
     where name' = rename (varNames ctx) name
   TmTyAbs (Id name) Nothing body -> showParen (p > 0) $ showString "?" . showString name' . showString ". " . prettyPrintTermP 0 (NTyVarBind name' : ctx) body

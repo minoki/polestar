@@ -66,6 +66,7 @@ pattern CTyBool = CTyPrim PTyBool
 data Builtin
   -- unary
   = BNegate
+  | BLogicalNot
   | BNatToInt
   | BNatToNNReal
   | BIntToNat -- max(n,0)
@@ -90,6 +91,8 @@ data Builtin
   | BEqual
   | BMax
   | BMin
+  | BLogicalAnd
+  | BLogicalOr
   -- | BIterate
   -- | BUnsafeGlue
   deriving (Eq,Show,Enum,Bounded)

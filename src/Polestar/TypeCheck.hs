@@ -66,6 +66,10 @@ primTypeOf (PVBuiltin f) = case f of
                      ,TyImaginary `TyArr` TyImaginary
                      ,TyComplex `TyArr` TyComplex
                      ]
+  BLogicalNot -> TyInter [TyTrue `TyArr` TyFalse
+                         ,TyFalse `TyArr` TyTrue
+                         ,TyBool `TyArr` TyBool
+                         ]
   BNatToInt -> TyNat `TyArr` TyInt
   BNatToNNReal -> TyNat `TyArr` TyReal
   BIntToNat -> TyInt `TyArr` TyNat -- max(n,0)
@@ -153,6 +157,16 @@ primTypeOf (PVBuiltin f) = case f of
                   ,TyNNReal `TyArr` (TyNNReal `TyArr` TyNNReal)
                   ,TyReal `TyArr` (TyReal `TyArr` TyReal)
                   ]
+  BLogicalAnd -> TyInter [TyFalse `TyArr` (TyBool `TyArr` TyFalse)
+                         ,TyBool `TyArr` (TyFalse `TyArr` TyFalse)
+                         ,TyTrue `TyArr` (TyTrue `TyArr` TyTrue)
+                         ,TyBool `TyArr` (TyBool `TyArr` TyBool)
+                         ]
+  BLogicalOr -> TyInter [TyTrue `TyArr` (TyBool `TyArr` TyTrue)
+                        ,TyBool `TyArr` (TyTrue `TyArr` TyTrue)
+                        ,TyFalse `TyArr` (TyFalse `TyArr` TyFalse)
+                        ,TyBool `TyArr` (TyBool `TyArr` TyBool)
+                        ]
 
 canonicalTypeOf :: [Binding] -> Term -> Either String CanonicalType
 canonicalTypeOf ctx tm = normalizeType ctx <$> typeOf ctx tm

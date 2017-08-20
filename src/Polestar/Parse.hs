@@ -31,6 +31,7 @@ builtinTypes = [("Zero",TyZero)
 builtins :: [(String,PrimValue)]
 builtins = map (fmap PVBuiltin)
            [("negate",BNegate)
+           ,("not",BLogicalNot)
            ,("natToInt",BNatToInt)
            ,("natToNNReal",BNatToNNReal)
            ,("intToNat",BIntToNat)
@@ -52,6 +53,8 @@ builtins = map (fmap PVBuiltin)
            ,("lt",BLt)
            ,("le",BLe)
            ,("equal",BEqual)
+           ,("and",BLogicalAnd)
+           ,("or",BLogicalOr)
            ]
 
 langDef = PT.LanguageDef { PT.commentStart = ""
@@ -162,7 +165,7 @@ opTerm ctx = PE.buildExpressionParser table (appTerm ctx) <?> "expression"
     table = [[binaryOp "^" BPow PE.AssocRight
              ]
             ,[prefixOp "-" BNegate
-             -- ,prefixOp "¬" BLogicNot -- \neg, \lnot
+             ,prefixOp "¬" BLogicalNot -- \neg, \lnot
              ]
             ,[binaryOp "*" BMul PE.AssocLeft
              ,binaryOp "/" BDiv PE.AssocLeft
@@ -179,7 +182,10 @@ opTerm ctx = PE.buildExpressionParser table (appTerm ctx) <?> "expression"
                -- ,binaryOp ">"  BGt PE.AssocNone
                -- ,binaryOp ">=" BGe PE.AssocNone
              ]
-              -- logical and, logical or
+            ,[binaryOp "&&" BLogicalAnd PE.AssocLeft
+             ]
+            ,[binaryOp "||" BLogicalOr PE.AssocLeft
+             ]
             ]
     prefixOp name fn = PE.Prefix (reservedOp name >> return (TmApp (TmPrim (PVBuiltin fn))))
     postfixOp name fn = PE.Postfix (reservedOp name >> return (TmApp (TmPrim (PVBuiltin fn))))

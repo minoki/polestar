@@ -69,6 +69,10 @@ complexFromValue (TmPrim (PVImaginary x)) = return (0:+x)
 complexFromValue (TmPrim (PVComplex z)) = return z
 complexFromValue _ = Left "type error (expected a complex number)"
 
+boolFromValue :: Term -> Either String Bool
+boolFromValue (TmPrim (PVBool x)) = return x
+boolFromValue _ = Left "type error (expected a boolean)"
+
 applyBuiltinUnary :: Builtin -> Term -> Either String Term
 applyBuiltinUnary f v = case f of
   BNegate -> case v of
@@ -78,6 +82,7 @@ applyBuiltinUnary f v = case f of
     TmPrim (PVImaginary x) -> return (TmPrim $ PVImaginary $ negate x)
     TmPrim (PVComplex x) -> return (TmPrim $ PVComplex $ negate x)
     _ -> Left "type error (expected an integer or a real number)"
+  BLogicalNot -> (TmPrim . PVBool . not) <$> boolFromValue v
   BNatToInt -> (TmPrim . PVInt) <$> natFromValue v
   BNatToNNReal -> (TmPrim . PVReal . fromIntegral) <$> natFromValue v
   BIntToNat -> (\x -> if x >= 0 then TmPrim (PVInt x) else TmPrim PVZero) <$> intFromValue v
@@ -181,6 +186,8 @@ applyBuiltinBinary f u v = case f of
                            ,(TmPrim . PVInt) <$> (min <$> intFromValue u <*> intFromValue v)
                            ,(TmPrim . PVReal) <$> (min <$> realFromValue u <*> realFromValue v)
                            ]
+  BLogicalAnd -> (TmPrim . PVBool) <$> ((&&) <$> boolFromValue u <*> boolFromValue v)
+  BLogicalOr -> (TmPrim . PVBool) <$> ((||) <$> boolFromValue u <*> boolFromValue v)
   _ -> Left "not implemented yet; sorry"
 
 data ValueBinding = ValueBind !Term
