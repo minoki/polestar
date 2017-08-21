@@ -79,6 +79,22 @@ data Builtin
   | BImagPart
   | BAbs
   | BSqrt
+  | BExp
+  | BExpm1
+  | BLog
+  | BLog1p
+  | BSin
+  | BCos
+  | BTan
+  | BSinh
+  | BCosh
+  | BTanh
+  | BAsin
+  | BAcos
+  | BAtan
+  | BAsinh
+  | BAcosh
+  | BAtanh
   -- TODO: factorial
   -- TODO: exp, log, expm1, log1p
   -- TODO: trigonometric functions and hyperbolic functions
@@ -152,6 +168,22 @@ isUnary f = case f of
   BImagPart -> True
   BAbs -> True
   BSqrt -> True
+  BExp -> True
+  BExpm1 -> True
+  BLog -> True
+  BLog1p -> True
+  BSin -> True
+  BCos -> True
+  BTan -> True
+  BSinh -> True
+  BCosh -> True
+  BTanh -> True
+  BAsin -> True
+  BAcos -> True
+  BAtan -> True
+  BAsinh -> True
+  BAcosh -> True
+  BAtanh -> True
   _ -> False
 
 isBinary :: Builtin -> Bool

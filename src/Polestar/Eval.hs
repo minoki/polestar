@@ -12,6 +12,7 @@ module Polestar.Eval
 import Polestar.Type
 import Polestar.TypeCheck
 import Data.Complex
+import GHC.Float (expm1, log1p)
 
 termSubstD :: Int -> Term -> Int -> Term -> Term
 termSubstD !depth s !i t = case t of
@@ -119,6 +120,57 @@ applyBuiltinUnary f v = case f of
     TmPrim (PVImaginary x) -> return $ TmPrim (PVComplex (sqrt (0:+x)))
     TmPrim (PVComplex z) -> return $ TmPrim (PVComplex (sqrt z))
     _ -> Left "type error (expected a complex number)"
+  BExp -> makeOverloadedFn [(TmPrim . PVReal . exp) <$> realFromValue v
+                           ,(TmPrim . PVComplex . exp) <$> complexFromValue v
+                           ]
+  BExpm1 -> makeOverloadedFn [(TmPrim . PVReal . expm1) <$> realFromValue v
+                             ,(TmPrim . PVComplex . expm1) <$> complexFromValue v
+                             ]
+  BLog -> makeOverloadedFn [(TmPrim . PVReal . log) <$> nnrealFromValue v
+                           ,(TmPrim . PVComplex . log) <$> complexFromValue v
+                           ]
+  BLog1p -> makeOverloadedFn [(TmPrim . PVReal . log1p) <$> nnrealFromValue v
+                             ,(TmPrim . PVComplex . log1p) <$> complexFromValue v
+                             ]
+  BSin -> makeOverloadedFn [(TmPrim . PVReal . sin) <$> realFromValue v
+                           ,(TmPrim . PVImaginary . sinh) <$> imaginaryFromValue v
+                           ,(TmPrim . PVComplex . sin) <$> complexFromValue v
+                           ]
+  BCos -> makeOverloadedFn [(TmPrim . PVReal . cos) <$> realFromValue v
+                           ,(TmPrim . PVReal . cosh) <$> imaginaryFromValue v
+                           ,(TmPrim . PVComplex . cos) <$> complexFromValue v
+                           ]
+  BTan -> makeOverloadedFn [(TmPrim . PVReal . tan) <$> realFromValue v
+                           ,(TmPrim . PVComplex . tan) <$> complexFromValue v
+                           ]
+  BSinh -> makeOverloadedFn [(TmPrim . PVReal . sinh) <$> realFromValue v
+                           ,(TmPrim . PVImaginary . sin) <$> imaginaryFromValue v
+                           ,(TmPrim . PVComplex . sinh) <$> complexFromValue v
+                           ]
+  BCosh -> makeOverloadedFn [(TmPrim . PVReal . cosh) <$> realFromValue v
+                           ,(TmPrim . PVReal . cos) <$> imaginaryFromValue v
+                           ,(TmPrim . PVComplex . cosh) <$> complexFromValue v
+                           ]
+  BTanh -> makeOverloadedFn [(TmPrim . PVReal . tan) <$> realFromValue v
+                            ,(TmPrim . PVImaginary . tanh) <$> imaginaryFromValue v
+                            ,(TmPrim . PVComplex . tan) <$> complexFromValue v
+                            ]
+  BAsin -> makeOverloadedFn [(TmPrim . PVImaginary . asinh) <$> imaginaryFromValue v
+                            ,(TmPrim . PVComplex . asin) <$> complexFromValue v
+                            ]
+  BAcos -> makeOverloadedFn [(TmPrim . PVComplex . acos) <$> complexFromValue v
+                            ]
+  BAtan -> makeOverloadedFn [(TmPrim . PVReal . atan) <$> realFromValue v
+                            ,(TmPrim . PVComplex . atan) <$> complexFromValue v
+                            ]
+  BAsinh -> makeOverloadedFn [(TmPrim . PVReal . asinh) <$> realFromValue v
+                             ,(TmPrim . PVComplex . asinh) <$> complexFromValue v
+                             ]
+  BAcosh -> makeOverloadedFn [(TmPrim . PVReal . acosh) <$> realFromValue v
+                             ]
+  BAtanh -> makeOverloadedFn [(TmPrim . PVImaginary . atan) <$> imaginaryFromValue v
+                             ,(TmPrim . PVComplex . atanh) <$> complexFromValue v
+                             ]
   _ -> Left "applyBuiltinUnary: not unary"
 
 makeOverloadedFn :: [Either String Term] -> Either String Term

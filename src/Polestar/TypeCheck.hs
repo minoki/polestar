@@ -92,6 +92,69 @@ primTypeOf (PVBuiltin f) = case f of
                    ,TyNNReal `TyArr` TyNNReal
                    ,TyComplex `TyArr` TyComplex
                    ]
+  BExp -> TyInter [TyReal `TyArr` TyNNReal -- TODO: Zero -> One (Nat) ?
+                  ,TyComplex `TyArr` TyComplex
+                  ]
+  BExpm1 -> TyInter [{- TyZero `TyArr` TyZero -}
+                     TyNNReal `TyArr` TyNNReal
+                    ,TyReal `TyArr` TyReal
+                    ,TyComplex `TyArr` TyComplex
+                    ]
+  BLog -> TyInter [TyNNReal `TyArr` TyReal -- TODO: One -> Zero
+                  ,TyComplex `TyArr` TyComplex
+                  ]
+  BLog1p -> TyInter [{- TyZero `TyArr` TyZero -}
+                     TyNNReal `TyArr` TyNNReal -- TODO: (-1,\infty)?
+                    ,TyComplex `TyArr` TyComplex
+                    ]
+  BSin -> TyInter [{- TyZero `TyArr` TyZero -}
+                   TyReal `TyArr` TyReal
+                  ,TyImaginary `TyArr` TyImaginary
+                  ,TyComplex `TyArr` TyComplex
+                  ]
+  BCos -> TyInter [TyReal `TyArr` TyReal -- TODO: Zero -> One (Nat)?
+                  ,TyImaginary `TyArr` TyNNReal
+                  ,TyComplex `TyArr` TyComplex
+                  ]
+  BTan -> TyInter [{- TyZero `TyArr` TyZero -}
+                   TyReal `TyArr` TyReal
+                  ,TyImaginary `TyArr` TyImaginary
+                  ,TyComplex `TyArr` TyComplex
+                  ]
+  BSinh -> TyInter [{- TyZero `TyArr` TyZero -}
+                    TyReal `TyArr` TyReal
+                   ,TyImaginary `TyArr` TyImaginary
+                   ,TyComplex `TyArr` TyComplex
+                   ]
+  BCosh -> TyInter [TyReal `TyArr` TyNNReal -- TODO: Zero -> One (Nat)?
+                   ,TyImaginary `TyArr` TyReal
+                   ,TyComplex `TyArr` TyComplex
+                   ]
+  BTanh -> TyInter [{- TyZero `TyArr` TyZero -}
+                    TyReal `TyArr` TyReal
+                   ,TyImaginary `TyArr` TyImaginary
+                   ,TyComplex `TyArr` TyComplex
+                   ]
+  BAsin -> TyInter [{- [-1,1] -> [-pi/2,pi/2] -}
+                    TyImaginary `TyArr` TyImaginary
+                   ,TyComplex `TyArr` TyComplex
+                   ]
+  BAcos -> TyInter [{- [-1,1] -> [0,pi] -}
+                    TyComplex `TyArr` TyComplex
+                   ]
+  BAtan -> TyInter [TyReal `TyArr` TyReal -- Real -> (-pi/2,pi/2)
+                   ,TyComplex `TyArr` TyComplex
+                   ]
+  BAsinh -> TyInter [TyReal `TyArr` TyReal
+                    ,TyComplex `TyArr` TyComplex
+                    ]
+  BAcosh -> TyInter [{- [1,\infty] -> [0,\infty] -}
+                     TyComplex `TyArr` TyComplex
+                    ]
+  BAtanh -> TyInter [{- (-1,1) -> TyReal -}
+                     TyImaginary `TyArr` TyImaginary
+                    ,TyComplex `TyArr` TyComplex
+                    ]
   BAdd -> TyInter [TyZero `TyArr` (TyZero `TyArr` TyZero)
                   ,TyNat `TyArr` (TyNat `TyArr` TyNat)
                   ,TyInt `TyArr` (TyInt `TyArr` TyInt)

@@ -22,7 +22,7 @@ library
                        , Polestar.Parse.Number
                        , Polestar.PrettyPrint
                        , Polestar.Eval
-  build-depends:       base >= 4.7 && < 5, parsec
+  build-depends:       base >= 4.9 && < 5, parsec
   default-language:    Haskell2010
   ghc-options:         -Wincomplete-patterns
 
@@ -37,7 +37,7 @@ executable Repl
                        , Polestar.Parse.Number
                        , Polestar.PrettyPrint
                        , Polestar.Eval
-  build-depends:       base >= 4.7 && < 5, parsec, haskeline
+  build-depends:       base >= 4.9 && < 5, parsec, haskeline
   ghc-options:         -Wincomplete-patterns
 
 source-repository head
