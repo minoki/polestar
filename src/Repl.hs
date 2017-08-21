@@ -12,7 +12,7 @@ import System.IO
 import Text.Parsec
 import System.Console.Haskeline -- from `haskeline' package
 
-data ReplCommand = ReplEval Term
+data ReplCommand = ReplEval Term !Bool
                  | ReplTermDef String Term
                  | ReplTypeDef String Type
                  | ReplCheckType Type
@@ -24,9 +24,10 @@ replCommand ctx = termDef <|> typeJoin <|> checkType <|> typeDef <|> checkSub <|
   where
     termEval = do
       whiteSpace
+      stepByStep <- (reserved "step" >> return True) <|> return False
       t <- term ctx
       eof
-      return (ReplEval t)
+      return (ReplEval t stepByStep)
     termDef = try $ do
       reserved "let"
       name <- identifier
@@ -101,7 +102,7 @@ repl ctx = do
         Left error -> do
           outputStrLn $ show error -- parse error
           repl ctx
-        Right (ReplEval tm) -> let tm' = resolveTypeAliasesInTerm ctx 0 tm
+        Right (ReplEval tm stepByStep) -> let tm' = resolveTypeAliasesInTerm ctx 0 tm
           in case typeOf (map toBinding ctx) tm' of
                Left error -> do
                  outputStrLn $ "Type error: " ++ error
@@ -111,7 +112,7 @@ repl ctx = do
                  outputStrLn $ "Type is " ++ prettyPrintCanonicalType ty' ++ "."
                  outputStrLn "Evaluation:"
                  outputStrLn (prettyPrintTerm tm')
-                 evalLoop tm'
+                 evalLoop tm' stepByStep
                  repl ctx
         Right (ReplTermDef name tm) -> let tm' = resolveTypeAliasesInTerm ctx 0 tm
           in case typeOf (map toBinding ctx) tm' of
@@ -123,7 +124,7 @@ repl ctx = do
                  outputStrLn $ name ++ " : " ++ prettyPrintCanonicalType ty' ++ "."
                  outputStrLn "Evaluation:"
                  outputStrLn (prettyPrintTerm tm')
-                 result <- evalLoop tm'
+                 result <- evalLoop tm' False
                  case result of
                    Just value -> repl (Let name value ty' : ctx)
                    Nothing -> repl ctx
@@ -150,16 +151,18 @@ repl ctx = do
   where
     prettyPrintCanonicalType t = prettyPrintCanonicalTypeP 0 (map toNameBinding ctx) t ""
     prettyPrintTerm t = prettyPrintTermP 0 (map toNameBinding ctx) t ""
-    evalLoop :: Term -> InputT IO (Maybe Term)
-    evalLoop t = case eval1 (map toValueBinding ctx) t of
+    evalLoop :: Term -> Bool -> InputT IO (Maybe Term)
+    evalLoop t stepByStep = case eval1 (map toValueBinding ctx) t of
       Left error -> do outputStrLn $ "Evaluation error: " ++ error
                        return Nothing
       Right t' | isValue t' -> do
                    outputStrLn $ "--> " ++ prettyPrintTerm t' ++ "."
                    return (Just t')
                | otherwise -> do
-                   outputStrLn $ "--> " ++ prettyPrintTerm t'
-                   evalLoop t'
+                   if stepByStep
+                     then outputStrLn $ "--> " ++ prettyPrintTerm t'
+                     else return ()
+                   evalLoop t' stepByStep
 
 main :: IO ()
 main = runInputT defaultSettings $ do
