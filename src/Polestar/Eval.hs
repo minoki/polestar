@@ -186,6 +186,10 @@ applyBuiltinBinary f u v = case f of
                            ,(TmPrim . PVInt) <$> (min <$> intFromValue u <*> intFromValue v)
                            ,(TmPrim . PVReal) <$> (min <$> realFromValue u <*> realFromValue v)
                            ]
+  BIntDiv -> (TmPrim . PVInt) <$> (div <$> intFromValue u <*> intFromValue v)
+  BIntMod -> (TmPrim . PVInt) <$> (mod <$> intFromValue u <*> intFromValue v)
+  BGcd -> (TmPrim . PVInt) <$> (gcd <$> intFromValue u <*> intFromValue v)
+  BLcm -> (TmPrim . PVInt) <$> (lcm <$> intFromValue u <*> intFromValue v)
   BLogicalAnd -> (TmPrim . PVBool) <$> ((&&) <$> boolFromValue u <*> boolFromValue v)
   BLogicalOr -> (TmPrim . PVBool) <$> ((||) <$> boolFromValue u <*> boolFromValue v)
   _ -> Left "not implemented yet; sorry"

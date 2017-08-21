@@ -94,6 +94,10 @@ data Builtin
   | BEqual
   | BMax
   | BMin
+  | BIntDiv
+  | BIntMod
+  | BGcd
+  | BLcm
   | BLogicalAnd
   | BLogicalOr
   -- TODO: binomial coefficients
@@ -163,6 +167,10 @@ isBinary f = case f of
   BEqual -> True
   BMax -> True
   BMin -> True
+  BIntDiv -> True
+  BIntMod -> True
+  BGcd -> True
+  BLcm -> True
   BLogicalAnd -> True
   BLogicalOr -> True
   _ -> False

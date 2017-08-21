@@ -157,6 +157,20 @@ primTypeOf (PVBuiltin f) = case f of
                   ,TyNNReal `TyArr` (TyNNReal `TyArr` TyNNReal)
                   ,TyReal `TyArr` (TyReal `TyArr` TyReal)
                   ]
+  BIntDiv -> TyInter [TyNat `TyArr` (TyNat `TyArr` TyNat)
+                     ,TyInt `TyArr` (TyInt `TyArr` TyInt)
+                     ]
+  BIntMod -> TyInter [TyInt `TyArr` (TyNat `TyArr` TyNat)
+                     ,TyInt `TyArr` (TyInt `TyArr` TyInt)
+                     ]
+  BGcd -> TyInter [TyNat `TyArr` (TyNat `TyArr` TyNat)
+                  ,TyInt `TyArr` (TyInt `TyArr` TyNat)
+                  ]
+  BLcm -> TyInter [TyZero `TyArr` (TyInt `TyArr` TyZero)
+                  ,TyInt `TyArr` (TyZero `TyArr` TyZero)
+                  ,TyNat `TyArr` (TyNat `TyArr` TyNat)
+                  ,TyInt `TyArr` (TyInt `TyArr` TyNat)
+                  ]
   BLogicalAnd -> TyInter [TyFalse `TyArr` (TyBool `TyArr` TyFalse)
                          ,TyBool `TyArr` (TyFalse `TyArr` TyFalse)
                          ,TyTrue `TyArr` (TyTrue `TyArr` TyTrue)
