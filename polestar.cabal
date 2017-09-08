@@ -16,13 +16,18 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Polestar.Type
-                       , Polestar.Subtype
-                       , Polestar.TypeCheck
-                       , Polestar.Parse
-                       , Polestar.Parse.Number
-                       , Polestar.PrettyPrint
-                       , Polestar.Eval
-  build-depends:       base >= 4.9 && < 5, parsec
+                     , Polestar.Subtype
+                     , Polestar.TypeCheck
+                     , Polestar.Parse
+                     , Polestar.Parse.Number
+                     , Polestar.PrettyPrint
+                     , Polestar.Eval
+                     , Polestar.Core.Type
+                     , Polestar.Core.TypeCheck
+                     , Polestar.Core.Parse
+                     , Polestar.Core.PrettyPrint
+                     , Polestar.Core.Eval
+  build-depends:       base >= 4.9 && < 5, parsec, mtl, containers
   default-language:    Haskell2010
   ghc-options:         -Wincomplete-patterns
 
@@ -31,12 +36,25 @@ executable Repl
   main-is:             Repl.hs
   default-language:    Haskell2010
   other-modules:       Polestar.Type
-                       , Polestar.Subtype
-                       , Polestar.TypeCheck
-                       , Polestar.Parse
-                       , Polestar.Parse.Number
-                       , Polestar.PrettyPrint
-                       , Polestar.Eval
+                     , Polestar.Subtype
+                     , Polestar.TypeCheck
+                     , Polestar.Parse
+                     , Polestar.Parse.Number
+                     , Polestar.PrettyPrint
+                     , Polestar.Eval
+  build-depends:       base >= 4.9 && < 5, parsec, haskeline
+  ghc-options:         -Wincomplete-patterns
+
+executable CoreRepl
+  hs-source-dirs:      src
+  main-is:             CoreRepl.hs
+  default-language:    Haskell2010
+  other-modules:       Polestar.Core.Type
+                     , Polestar.Core.TypeCheck
+                     , Polestar.Core.Parse
+                     , Polestar.Parse.Number
+                     , Polestar.Core.PrettyPrint
+                     , Polestar.Core.Eval
   build-depends:       base >= 4.9 && < 5, parsec, haskeline
   ghc-options:         -Wincomplete-patterns
 

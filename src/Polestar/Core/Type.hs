@@ -24,25 +24,42 @@ newtype Id = Id String deriving (Show)
 
 data UnaryFn = UNegateInt
              | UNegateReal
-             | UIntToReal
              | UNatToInt
+             | UIntToReal
              | UIntToNat -- max(n,0)
              deriving (Eq,Show,Enum,Bounded)
 
-data BinaryFn = UAddNat
-              | UMulNat
-              | UTSubNat -- truncated subtraction
-              | UAddInt
-              | USubInt
-              | UMulInt
-              | UAddReal
-              | USubReal
-              | UMulReal
-              | UDivReal
-              | ULtReal
-              | ULeReal
-              | UEqualReal
-              deriving (Eq,Show,Enum,Bounded)
+data BinaryFn
+
+  -- Natural number
+  = UAddNat
+  | UMulNat
+  | UTSubNat -- truncated subtraction
+  | UPowNatNat
+  | UEqualNat
+  | ULessThanNat
+  | ULessEqualNat
+
+  -- Integer
+  | UAddInt
+  | USubInt
+  | UMulInt
+  | UPowIntNat
+  | UEqualInt
+  | ULessThanInt
+  | ULessEqualInt
+
+  -- Real numbers
+  | UAddReal
+  | USubReal
+  | UMulReal
+  | UDivReal
+  | UPowRealReal
+  | UEqualReal
+  | ULessThanReal
+  | ULessEqualReal
+
+  deriving (Eq,Show,Enum,Bounded)
 
 data PrimValue = PVNat !Integer
                | PVInt !Integer
@@ -59,7 +76,9 @@ data Term = TmPrim !PrimValue
           | TmApp Term Term
           | TmLet Id Term Term
           | TmIf Term Term Term
+          | TmTuple [Term]
           | TmProj Term !Int
+          | TmIterate Term Term Term
           deriving (Eq,Show)
 
 data Binding = VarBind Id Type
@@ -71,6 +90,7 @@ isValue t = case t of
   TmPrim _ -> True
   TmAbs _ _ _ -> True
   TmApp (TmPrim (PVBinary _)) x -> isValue x -- partial application
+  TmTuple components -> all isValue components
   _ -> False
 
 getTypeFromContext :: [Binding] -> Int -> Type
@@ -79,6 +99,17 @@ getTypeFromContext ctx i
       VarBind _ ty -> ty
       b -> error ("TmRef: expected a variable binding, found " ++ show b)
   | otherwise = error "TmRef: index out of bounds"
+
+typeSubstD :: Int -> Type -> Int -> Type -> Type
+typeSubstD _ _ _ = id
+
+typeShift :: Int -> Int -> Type -> Type
+typeShift _ _ = id
+
+isScalarType :: Type -> Bool
+isScalarType (TyPrim _) = True
+isScalarType (TyArr _ _) = False
+isScalarType (TyTuple components) = all isScalarType components
 
 instance Eq Id where
   _ == _ = True
