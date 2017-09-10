@@ -1,14 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
-module Polestar.Core.Eval
-  (termShift
-  ,termTypeSubst
-  ,termSubstD
-  ,termSubst
-  ,ValueBinding(..)
-  ,getValueFromContext
-  ,eval1
-  ,eval
-  ) where
+module Polestar.Core.Eval where
 import Polestar.Core.Type
 import Polestar.Core.TypeCheck
 import Data.Complex
