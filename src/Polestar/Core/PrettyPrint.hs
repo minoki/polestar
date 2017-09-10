@@ -77,6 +77,8 @@ prettyPrintTermP p ctx t = case t of
   TmApp u v -> showParen (p > 1) $ prettyPrintTermP 1 ctx u . showChar ' ' . prettyPrintTermP 2 ctx v
   TmLet (Id name) def body -> showParen (p > 0) $ showString "let " . showString name' . showString " = " . prettyPrintTermP 0 ctx def . showString " in " . prettyPrintTermP 0 (NVarBind name' : ctx) body
     where name' = rename (varNames ctx) name
+  TmTypedLet (Id name) ty def body -> showParen (p > 0) $ showString "let " . showString name' . showString " = " . prettyPrintTermP 0 ctx def . {- showString " : " . prettyPrintTypeP 1 ctx ty . -} showString " in " . prettyPrintTermP 0 (NVarBind name' : ctx) body
+    where name' = rename (varNames ctx) name
   TmIf cond then_ else_ -> showParen (p > 0) $ showString "if " . prettyPrintTermP 0 ctx cond . showString " then " . prettyPrintTermP 0 ctx then_ . showString " else " . prettyPrintTermP 0 ctx else_
   TmTuple components -> showParen True $ foldr (.) id $ intersperse (showString ", ") $ map (prettyPrintTermP 0 ctx) components
   TmProj tuple i -> showParen (p > 1) $ prettyPrintTermP 1 ctx tuple . showString " @" . shows i

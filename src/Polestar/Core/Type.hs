@@ -75,6 +75,7 @@ data Term = TmPrim !PrimValue
           | TmRef !Int
           | TmApp Term Term
           | TmLet Id Term Term
+          | TmTypedLet Id Type Term Term
           | TmIf Term Term Term
           | TmTuple [Term]
           | TmProj Term !Int

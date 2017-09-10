@@ -22,6 +22,7 @@ termSubstD !depth s !i t = case t of
           | otherwise -> t
   TmApp u v -> TmApp (termSubstD depth s i u) (termSubstD depth s i v)
   TmLet name def body -> TmLet name (termSubstD depth s i def) (termSubstD depth s (i + 1) body) -- ?
+  TmTypedLet name ty def body -> TmTypedLet name ty (termSubstD depth s i def) (termSubstD depth s (i + 1) body) -- ?
   TmIf cond then_ else_ -> TmIf (termSubstD depth s i cond) (termSubstD depth s i then_) (termSubstD depth s i else_)
   TmPrim _ -> t
   TmTuple components -> TmTuple $ termSubstD depth s i <$> components
@@ -108,6 +109,9 @@ eval1 ctx t = case t of
   TmLet name def body
     | isValue def -> return $ termSubst def 0 body
     | otherwise -> TmLet name <$> eval1 ctx def <*> pure body
+  TmTypedLet name ty def body
+    | isValue def -> return $ termSubst def 0 body
+    | otherwise -> TmTypedLet name ty <$> eval1 ctx def <*> pure body
   TmIf cond then_ else_
     | isValue cond -> case cond of
         TmPrim (PVBool True) -> return then_  -- no type checking here

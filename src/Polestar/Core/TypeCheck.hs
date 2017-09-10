@@ -20,6 +20,7 @@ termShift !delta = go
               | otherwise -> t
       TmApp u v -> TmApp (go i u) (go i v)
       TmLet name def body -> TmLet name (go i def) (go (i + 1) body)
+      TmTypedLet name ty def body -> TmTypedLet name ty (go i def) (go (i + 1) body)
       TmIf cond then_ else_ -> TmIf (go i cond) (go i then_) (go i else_)
       TmTuple components -> TmTuple (go i <$> components)
       TmProj tuple j -> TmProj (go i tuple) j
@@ -33,6 +34,7 @@ termTypeSubstD depth s i t = case t of
           | otherwise -> t
   TmApp u v -> TmApp (termTypeSubstD depth s i u) (termTypeSubstD depth s i v)
   TmLet name def body -> TmLet name (termTypeSubstD depth s i def) (termTypeSubstD (depth + 1) s (i + 1) body)
+  TmTypedLet name ty def body -> TmTypedLet name ty (termTypeSubstD depth s i def) (termTypeSubstD (depth + 1) s (i + 1) body)
   TmIf cond then_ else_ -> TmIf (termTypeSubstD depth s i cond) (termTypeSubstD depth s i then_) (termTypeSubstD depth s i else_)
   TmTuple components -> TmTuple (termTypeSubstD depth s i <$> components)
   TmProj tuple j -> TmProj (termTypeSubstD depth s i tuple) j
@@ -97,6 +99,10 @@ typeOf ctx tm = case tm of
       _ -> Left ("invalid function application (expected function type, got: " ++ show fnType ++ ")")
   TmLet name def body -> do
     definedType <- typeOf ctx def
+    typeOf (VarBind name definedType : ctx) body
+  TmTypedLet name ty def body -> do
+    definedType <- typeOf ctx def
+    guardWithMessage (ty == definedType) "typed let: declared type must match with the actual type"
     typeOf (VarBind name definedType : ctx) body
   TmIf cond then_ else_ -> do
     condType <- typeOf ctx cond
