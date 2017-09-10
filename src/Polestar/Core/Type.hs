@@ -82,6 +82,10 @@ data Term = TmPrim !PrimValue
           | TmIterate Term Term Term
           deriving (Eq,Show)
 
+pattern TmUnary f u = TmApp (TmPrim (PVUnary f)) u
+pattern TmBinary f u v = TmApp (TmApp (TmPrim (PVBinary f)) u) v
+pattern TmBinaryPA f u = TmApp (TmPrim (PVBinary f)) u -- partial application
+
 data Binding = VarBind Id Type
              | AnonymousBind
              deriving (Eq,Show)
