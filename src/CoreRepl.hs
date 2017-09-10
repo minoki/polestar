@@ -6,16 +6,19 @@ import Polestar.Core.Type
 import Polestar.Core.TypeCheck
 import Polestar.Core.PrettyPrint
 import Polestar.Core.Eval
+import Polestar.Core.Expander
 import Control.Monad (when)
 import System.IO
 import Text.Parsec
 import System.Console.Haskeline -- from `haskeline' package
 
 data ReplCommand = ReplEval Term !Bool
+                 | ReplExpand Term
+                 | ReplOpt Term
                  | ReplTermDef String Term
 
 replCommand :: [NameBinding] -> Parser ReplCommand
-replCommand ctx = termDef <|> termEval <?> "REPL Command"
+replCommand ctx = termDef <|> termExpand <|> termEval <?> "REPL Command"
   where
     termEval = do
       whiteSpace
@@ -23,6 +26,11 @@ replCommand ctx = termDef <|> termEval <?> "REPL Command"
       t <- term ctx
       eof
       return (ReplEval t stepByStep)
+    termExpand = do
+      reserved "expand"
+      t <- term ctx
+      eof
+      return (ReplExpand t)
     termDef = try $ do
       reserved "let"
       name <- identifier
@@ -61,6 +69,14 @@ repl ctx = do
             outputStrLn "Evaluation:"
             outputStrLn (prettyPrintTerm tm)
             evalLoop tm stepByStep
+            repl ctx
+        Right (ReplExpand tm) -> case expand [] tm of
+          Left error -> do
+            outputStrLn $ "Type error: " ++ error
+            repl ctx
+          Right (ty,tm') -> do
+            outputStrLn $ "Type is " ++ prettyPrintType ty ++ "."
+            outputStrLn (prettyPrintTerm tm')
             repl ctx
         Right (ReplTermDef name tm) -> case typeOf (map toBinding ctx) tm of
           Left error -> do

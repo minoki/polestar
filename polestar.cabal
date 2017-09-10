@@ -55,7 +55,8 @@ executable CoreRepl
                      , Polestar.Parse.Number
                      , Polestar.Core.PrettyPrint
                      , Polestar.Core.Eval
-  build-depends:       base >= 4.9 && < 5, parsec, haskeline
+                     , Polestar.Core.Expander
+  build-depends:       base >= 4.9 && < 5, parsec, haskeline, mtl
   ghc-options:         -Wincomplete-patterns
 
 source-repository head
