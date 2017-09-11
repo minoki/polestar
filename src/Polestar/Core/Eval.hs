@@ -7,13 +7,13 @@ import GHC.Float (expm1, log1p)
 
 termSubstD :: Int -> Term -> Int -> Term -> Term
 termSubstD !depth s !i t = case t of
-  TmAbs name ty body -> TmAbs name (typeShift (-1) i ty) (termSubstD depth s (i + 1) body)
+  TmAbs name ty body -> TmAbs name (typeShift (-1) i ty) (termSubstD (depth + 1) s (i + 1) body)
   TmRef j | j == i -> termShift depth 0 s
           | j > i -> TmRef (j - 1)
           | otherwise -> t
   TmApp u v -> TmApp (termSubstD depth s i u) (termSubstD depth s i v)
-  TmLet name def body -> TmLet name (termSubstD depth s i def) (termSubstD depth s (i + 1) body) -- ?
-  TmTypedLet name ty def body -> TmTypedLet name ty (termSubstD depth s i def) (termSubstD depth s (i + 1) body) -- ?
+  TmLet name def body -> TmLet name (termSubstD depth s i def) (termSubstD (depth + 1) s (i + 1) body)
+  TmTypedLet name ty def body -> TmTypedLet name ty (termSubstD depth s i def) (termSubstD (depth + 1) s (i + 1) body)
   TmIf cond then_ else_ -> TmIf (termSubstD depth s i cond) (termSubstD depth s i then_) (termSubstD depth s i else_)
   TmPrim _ -> t
   TmTuple components -> TmTuple $ termSubstD depth s i <$> components
