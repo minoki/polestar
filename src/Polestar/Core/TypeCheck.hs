@@ -6,6 +6,7 @@ import Data.List
 import Control.Monad
 import Control.Monad.Fail
 import Control.Arrow
+import Control.Parallel.Strategies
 
 -- replaces occurrences of TyRef j, TRef j (j >= i) with TyRef (j + delta), TRef (j + delta)
 termShift :: Int -> Int -> Term -> Term
@@ -84,6 +85,14 @@ guardWithMessage :: Bool -> e -> Either e ()
 guardWithMessage True _ = return ()
 guardWithMessage False err = Left err
 
+-- TODO: support multiple error messages
+combine2 :: (NFData a, NFData b) => Either String a -> Either String b -> Either String (a,b)
+combine2 a b = let (a',b') = (a,b) `using` parTuple2 rseq rseq
+               in liftM2 (,) a' b'
+combine3 :: (NFData a, NFData b, NFData c) => Either String a -> Either String b -> Either String c -> Either String (a,b,c)
+combine3 a b c = let (a',b',c') = (a,b,c) `using` parTuple3 rseq rseq rseq
+                 in liftM3 (,,) a' b' c'
+
 typeOf :: [Binding] -> Term -> Either String Type
 typeOf ctx tm = case tm of
   TmPrim primValue -> return (primTypeOf primValue)
@@ -91,8 +100,7 @@ typeOf ctx tm = case tm of
     TyArr argType <$> typeOf (VarBind name argType : ctx) body
   TmRef i -> return $ typeShift (i + 1) 0 $ getTypeFromContext ctx i
   TmApp f x -> do
-    fnType <- typeOf ctx f
-    actualArgType <- typeOf ctx x
+    (fnType,actualArgType) <- combine2 (typeOf ctx f) (typeOf ctx x)
     case fnType of
       TyArr expectedArgType retType | expectedArgType == actualArgType -> return $ typeShift (-1) 0 retType
                                     | otherwise -> Left ("type error (expected: " ++ show expectedArgType ++ ", got: " ++ show actualArgType ++ ")")
@@ -105,14 +113,13 @@ typeOf ctx tm = case tm of
     guardWithMessage (ty == definedType) "typed let: declared type must match with the actual type"
     typeOf (VarBind name definedType : ctx) body
   TmIf cond then_ else_ -> do
-    condType <- typeOf ctx cond
-    thenType <- typeOf ctx then_
-    elseType <- typeOf ctx else_
+    (condType,thenType,elseType) <- combine3 (typeOf ctx cond) (typeOf ctx then_) (typeOf ctx else_)
     guardWithMessage (condType == TyBool) "if-then-else: conditon must be boolean"
     guardWithMessage (thenType == elseType) "if-then-else: incompatible types"
     return thenType
   TmTuple components -> do
-    TyTuple <$> mapM (typeOf ctx) components
+    -- TODO: support multiple error messages
+    TyTuple <$> sequence (parMap rseq (typeOf ctx) components)
   TmProj tuple i -> do
     tupleTy <- typeOf ctx tuple
     case tupleTy of
@@ -120,11 +127,9 @@ typeOf ctx tm = case tm of
                          | otherwise -> Left "the size of the tuple must be larger than index"
       _ -> Left "expression must be a tuple"
   TmIterate n init succ -> do
-    nTy <- typeOf ctx n
-    guardWithMessage (nTy == TyNat) "iterate: count must be a natural number"
-    initTy <- typeOf ctx init
-    succTy <- typeOf ctx succ
+    (nTy,initTy,succTy) <- combine3 (typeOf ctx n) (typeOf ctx init) (typeOf ctx succ)
     let expectedSuccTy = TyArr initTy (typeShift 1 0 initTy)
+    guardWithMessage (nTy == TyNat) "iterate: count must be a natural number"
     guardWithMessage (succTy == expectedSuccTy) ("iterate: succ function must be " ++ show expectedSuccTy)
     guardWithMessage (isScalarType initTy) ("iterate: non-scalar accumulator type is not supported")
     return initTy

@@ -27,7 +27,7 @@ library
                      , Polestar.Core.Parse
                      , Polestar.Core.PrettyPrint
                      , Polestar.Core.Eval
-  build-depends:       base >= 4.9 && < 5, parsec, mtl, containers, deepseq
+  build-depends:       base >= 4.9 && < 5, parsec, mtl, containers, deepseq, parallel
   default-language:    Haskell2010
   ghc-options:         -Wincomplete-patterns
 
@@ -42,7 +42,7 @@ executable Repl
                      , Polestar.Parse.Number
                      , Polestar.PrettyPrint
                      , Polestar.Eval
-  build-depends:       base >= 4.9 && < 5, parsec, haskeline, deepseq
+  build-depends:       base >= 4.9 && < 5, parsec, haskeline, deepseq, parallel
   ghc-options:         -Wincomplete-patterns
 
 executable CoreRepl
@@ -56,7 +56,7 @@ executable CoreRepl
                      , Polestar.Core.PrettyPrint
                      , Polestar.Core.Eval
                      , Polestar.Core.Expander
-  build-depends:       base >= 4.9 && < 5, parsec, haskeline, mtl, deepseq
+  build-depends:       base >= 4.9 && < 5, parsec, haskeline, mtl, deepseq, parallel
   ghc-options:         -Wincomplete-patterns
 
 source-repository head

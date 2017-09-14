@@ -4,6 +4,7 @@ import Polestar.Core.TypeCheck
 import Polestar.Core.Eval
 import Control.Arrow
 import Control.Monad.Except
+import Control.Parallel.Strategies
 
 data EBinding = EVarBind Id Type
               | ELetBind Id Type Term
@@ -51,8 +52,7 @@ expand ctx t = case t of
               ELetBind _ ty _ -> pure (ty, t) -- TODO: tuple?
           | otherwise -> throwError "invalid variable referenece"
   TmApp f x -> do
-    (fnType, f') <- expand ctx f
-    (actualArgType, x') <- expand ctx x
+    ((fnType, f'),(actualArgType, x')) <- combine2 (expand ctx f) (expand ctx x)
     case fnType of
       TyArr expectedArgType retType
         | expectedArgType == actualArgType -> (,) retType <$> doApply ctx f' x'
@@ -68,14 +68,13 @@ expand ctx t = case t of
     (bodyType,body') <- expand (ELetBind name definedType def' : ctx) body
     return (bodyType, TmTypedLet name ty def' body')
   TmIf cond then_ else_ -> do
-    (condType, cond') <- expand ctx cond
+    ((condType, cond'),(thenType, then'),(elseType, else')) <- combine3 (expand ctx cond) (expand ctx then_) (expand ctx else_)
     guardWithMessage (condType == TyBool) "if-then-else: condition must be boolean"
-    (thenType, then') <- expand ctx then_
-    (elseType, else') <- expand ctx else_
     guardWithMessage (thenType == elseType) "if-then-else: incompatible types"
     (,) thenType <$> doIfThenElse ctx thenType cond' then' else'
   TmTuple components -> do
-    components' <- mapM (expand ctx) components
+    -- TODO: support multiple error messages
+    components' <- sequence (parMap rseq (expand ctx) components)
     return (TyTuple $ map fst components', TmTuple $ map snd components')
   TmProj tuple i -> do
     (tupleTy, tuple') <- expand ctx tuple
@@ -84,11 +83,9 @@ expand ctx t = case t of
                     | otherwise -> throwError "the size of the tuple must be larger than index"
       _ -> throwError "expression must be a tuple"
   TmIterate n init succ -> do
-    (nTy,n') <- expand ctx n
-    guardWithMessage (nTy == TyNat) "iterate: count must be a natural number"
-    (initTy,init') <- expand ctx init
-    (succTy,succ') <- expand ctx succ
+    ((nTy,n'),(initTy,init'),(succTy,succ')) <- combine3 (expand ctx n) (expand ctx init) (expand ctx succ)
     let expectedSuccTy = TyArr initTy (typeShift 1 0 initTy)
+    guardWithMessage (nTy == TyNat) "iterate: count must be a natural number"
     guardWithMessage (succTy == expectedSuccTy) ("iterate: succ function must be " ++ show expectedSuccTy)
     guardWithMessage (isScalarType initTy) ("iterate: non-scalar accumulator type is not supported")
     return (initTy,TmIterate n' init' succ')
